@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model alembic_version {
+  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
+}
+
+model Class {
+  id              Int               @id @default(autoincrement())
+  title           String?           @db.VarChar
+  description     String?           @db.VarChar
+  teacherId      Int? @map("teacher_id")
+  teacher         Teacher?          @relation(fields: [teacherId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
+  class_thumbnail ClassThumbnail[]
+  class_user      ClassUser[]
+  message         Message[]
+  request         Request[]
+
+  @@map("class")
+}
+
+model ClassThumbnail {
+  id           Int           @id @default(autoincrement())
+  class_id     Int?
+  image        Bytes?
+  class Class? @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+	@@map("class_thumbnail")
+}
+
+model ClassUser {
+  classId                      Int @map("class")
+  userId                       Int @map("user")
+  class               Class @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_class_user_userTouser User         @relation("class_user_userTouser", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([classId, userId])
+	@@map("class_user")
+}
+
+model Message {
+  id                      Int           @id @default(autoincrement())
+  content                 String?       @db.VarChar
+  date                    DateTime      @db.Timestamp(6)
+  user                    Int
+  class_                  Int
+  class            Class? @relation(fields: [class_], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_message_userTouser User?         @relation("message_userTouser", fields: [user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+	@@map("message")
+}
+
+model Request {
+  classId                   Int @map("class")
+  userId                    Int @map("user")
+  class            Class @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_request_userTouser User         @relation("request_userTouser", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([classId, userId])
+	@@map("request")
+}
+
+model Teacher {
+  userId      Int            @id @map("user_id")
+  diplomas     String[]       @db.VarChar
+  employment   String[]       @db.VarChar
+  Renamedclass Class[]
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+	@@map("teacher")
+}
+
+model User {
+  id                               Int          @id @default(autoincrement())
+  username                         String      @unique @db.VarChar
+  firstName                        String      @db.VarChar
+  lastName                         String      @db.VarChar
+  email                            String      @unique @db.VarChar
+  password                         String      @db.VarChar
+  phone                            String      @unique @db.VarChar
+  role                             Role?
+  class_user_class_user_userTouser ClassUser[] @relation("class_user_userTouser")
+  message_message_userTouser       Message[]    @relation("message_userTouser")
+  request_request_userTouser       Request[]    @relation("request_userTouser")
+  teacher                          Teacher?
+	@@map("user")
+}
+
+enum Role {
+  teacher
+  student
+	@@map("role")
+}
